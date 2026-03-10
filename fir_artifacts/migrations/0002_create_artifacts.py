@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 from django.db import models, migrations
 import fir_artifacts.models
@@ -44,7 +43,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='file',
             name='content_type',
-            field=models.ForeignKey(to='contenttypes.ContentType', null=True),
+            field=models.ForeignKey(to='contenttypes.ContentType', on_delete=models.CASCADE, null=True),
             preserve_default=True,
         ),
         migrations.AddField(

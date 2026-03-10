@@ -1,22 +1,64 @@
 import re
+from django.db.models import Q, Subquery
 
-from django.db.models import Q
-
-def keyword_filter(q, query_string):
-    nugget = re.search("nugget:(\S+)", query_string)
-    if nugget:
-        nugget = nugget.group(1)
-        q = q & Q(nugget__source__icontains=nugget) | Q(nugget__raw_data__icontains=nugget) | Q(nugget__interpretation__icontains=nugget)
-        query_string = query_string.replace('nugget:' + nugget, '')
-    return q, query_string
-
-
-def search_filter(q, query_string):
-    q = q | (Q(nugget__source__icontains=query_string) | Q(nugget__raw_data__icontains=query_string) | Q(nugget__interpretation__icontains=query_string))
-    return q, query_string
-
+from fir_nuggets.api import NuggetSerializer
+from fir_nuggets.models import Nugget
 
 hooks = {
-    "keyword_filter": keyword_filter,
-    "search_filter": search_filter
+    "keyword_filter": {
+        "nugget": lambda x: Q(
+            id__in=Subquery(
+                Nugget.objects.filter(source__icontains=x)
+                .values("incident_id")
+                .distinct()
+            )
+        )
+        | Q(
+            id__in=Subquery(
+                Nugget.objects.filter(raw_data__icontains=x)
+                .values("incident_id")
+                .distinct()
+            )
+        )
+        | Q(
+            id__in=Subquery(
+                Nugget.objects.filter(interpretation__icontains=x)
+                .values("incident_id")
+                .distinct()
+            )
+        )
+    },
+    "search_filter": [
+        lambda x: Q(
+            id__in=Subquery(
+                Nugget.objects.filter(source__icontains=x)
+                .values("incident_id")
+                .distinct()
+            )
+        )
+        | Q(
+            id__in=Subquery(
+                Nugget.objects.filter(raw_data__icontains=x)
+                .values("incident_id")
+                .distinct()
+            )
+        )
+        | Q(
+            id__in=Subquery(
+                Nugget.objects.filter(interpretation__icontains=x)
+                .values("incident_id")
+                .distinct()
+            )
+        )
+    ],
+    "incident_fields": [
+        (
+            "nugget_set",  #  name of the new field
+            None,
+            NuggetSerializer(
+                many=True, read_only=True
+            ),  # Serializer corresponding to the new field
+            None,
+        ),
+    ],
 }

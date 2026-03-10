@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 from django.db import models, migrations
 import datetime
@@ -24,8 +23,8 @@ class Migration(migrations.Migration):
                 ('start_timestamp', models.DateTimeField(default=datetime.datetime.now, null=True, blank=True)),
                 ('end_timestamp', models.DateTimeField(null=True, blank=True)),
                 ('interpretation', models.TextField()),
-                ('found_by', models.ForeignKey(to=settings.AUTH_USER_MODEL)),
-                ('incident', models.ForeignKey(to='incidents.Incident')),
+                ('found_by', models.ForeignKey(to=settings.AUTH_USER_MODEL, on_delete=models.deletion.CASCADE)),
+                ('incident', models.ForeignKey(to='incidents.Incident', on_delete=models.deletion.CASCADE)),
             ],
             options={
             },

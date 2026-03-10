@@ -11,16 +11,14 @@ class ArtifactEnrichment(models.Model):
     name = models.CharField(max_length=100)
     raw = models.TextField()
 
-    def __unicode__(self):
+    def __str__(self):
         return self.name
 
 
 @receiver(post_save, sender=Artifact)
 def analyze_artifacts(sender, instance=None, created=False, **kwargs):
-    types_to_enrich = ['hostname', 'email', 'ip', 'url']
+    from fir_artifacts_enrichment.tasks import enrich_artifact
 
+    types_to_enrich = ["hostname", "email", "ip", "url"]
     if created and instance.type in types_to_enrich:
         enrich_artifact.apply_async(args=[instance.id], task_id=str(instance.id))
-
-
-from fir_artifacts_enrichment.tasks import enrich_artifact

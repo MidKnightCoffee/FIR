@@ -3,42 +3,20 @@
 $(document).keypress(function(e){
 
 	if (e.keyCode == 14 && e.ctrlKey) { // Ctrl + n
-		console.log('(nuggets) Ctrl + n')
 		$("#add-nugget").click()
 	}
 
 	if (e.keyCode == 13 && e.ctrlKey) { // Ctrl + ENTER
-		console.log('(nuggets) Ctrl + ENTER')
 		$("#submit-nugget").click();
 		$("#submit-nugget").remove();
 	}
 
 	if (e.keyCode == 5 && e.ctrlKey) {
-		console.log('(nuggets) Ctrl + E')
 		$("#nuggets tr:hover .edit-nugget-row a").click()
 	}
 
 });
 
-
-// helper function for getting cookie value
-
-function getCookie(name) {
-    var cookieValue = null;
-    if (document.cookie && document.cookie != '') {
-        var cookies = document.cookie.split(';');
-        for (var i = 0; i < cookies.length; i++) {
-            var cookie = jQuery.trim(cookies[i]);
-            // Does this cookie string begin with the name we want?
-            if (cookie.substring(0, name.length + 1) == (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-
-    return cookieValue;
-}
 
 /* Button functions */
 
@@ -66,10 +44,11 @@ $(function() {
 })
 
 function ajax_action(elt, callback) {
+        const csrftoken = document.querySelector("[name=csrfmiddlewaretoken]");
 
 	$.ajax({
 		url: elt.data('url'),
-		headers: {'X-CSRFToken': getCookie('csrftoken')},
+		headers: {'X-CSRFToken': csrftoken},
 	}).success(function(data) {
 		callback(data);
 	});
@@ -81,7 +60,7 @@ function delete_nugget (data) {
 	count = parseInt($('#nuggets-count').text());
 	$('#nuggets-count').text(count - 1);
 	if (count-1 == 0) {
-		$('#tab_nuggets_title').addClass('hidden');
+		$('#tab_nuggets_title').addClass('visually-hidden');
 	}
 }
 
@@ -96,12 +75,13 @@ function edit_nugget(data) {
 
 function submit_nugget () {
 	data = $("#nugget_form").serialize()
+        const csrftoken = document.querySelector("[name=csrfmiddlewaretoken]");
 
 	$.ajax({
 		type: 'POST',
 		url: $("#nugget_form").attr('action'),
 		data: data,
-		headers: {'X-CSRFToken': getCookie('csrftoken')},
+		headers: {'X-CSRFToken': csrftoken},
 		success: function (msg) {
 
 			if (msg.status == 'success') {
@@ -109,7 +89,10 @@ function submit_nugget () {
 					$("#addNugget").modal('hide');
 					$("#nugget_"+msg.nugget_id).html(msg.row);
 					$("#raw_"+msg.nugget_id).html(msg.raw);
-					$("#nugget_"+msg.nugget_id).effect('highlight', 'slow');
+					$("#nugget_"+msg.nugget_id).addClass('table-warning');
+					setTimeout(function(){
+					  $("#nugget_"+msg.nugget_id).removeClass('table-warning');
+					}, 2000)
 				}
 
 				else if (msg.mode == 'new') {
@@ -123,9 +106,11 @@ function submit_nugget () {
 					  count = parseInt($('#nuggets-count').text());
 					  $('#nuggets-count').text(count + 1);
 
-					  $('#tab_nuggets_title').removeClass('hidden');
-					  $('#tab_nuggets_title a').tab('show');
-					  $("#nugget_"+msg.nugget_id).effect('highlight', 2000);
+					  $('#tab_nuggets_title button').tab('show');
+					  $("#nugget_"+msg.nugget_id).addClass('table-warning')
+					  setTimeout(function(){
+						$("#nugget_"+msg.nugget_id).removeClass('table-warning');
+					  }, 2000)
 					});
 				}
 			}

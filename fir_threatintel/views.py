@@ -12,8 +12,8 @@ from fir_threatintel.models import YetiProfile
 def update_api(request):
     yp, _ = YetiProfile.objects.get_or_create(user_id=request.user)
 
-    yp.api_key = request.POST.get('yeti_api', '')
-    yp.endpoint = request.POST.get('endpoint', '')
+    yp.api_key = request.POST.get("yeti_api", "")
+    yp.endpoint = request.POST.get("endpoint", "")
     yp.save()
 
     messages.success(request, "Yeti API successfully updated")

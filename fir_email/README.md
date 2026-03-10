@@ -1,16 +1,19 @@
-# Email helpers module
+This module is part of fhe FIR. It allows FIR to send emails.
+This module is always enabled (even if not included in `enabled_apps.txt`). It however need to be configured before being able to send emails.
 
 ## Configure FIR to send emails
 
-Follow the Django docs: [Django email backend](https://docs.djangoproject.com/en/1.9/topics/email/).
+Follow the Django docs: [Django email backend](https://docs.djangoproject.com/en/5.0/topics/email/).
 
-In addition, you have to configure two settings:
+You at least need to configure the following settings:
 
 ```python
-# From address (required, string)
-EMAIL_FROM = 'fir@example.com'
-# Reply to address (optional, string)
-REPLY_TO = None
+# SMTP server (required, string)
+EMAIL_HOST = "smtp.server.com"
+# SMTP server (required, int)
+EMAIL_PORT = 25
+# Sender (required, string)
+EMAIL_FROM = '"NAME" <name@domain>'
 ```
 
 ## Adding CC and BCC recipients (for `fir_alerting` and `fir_abuse`)
@@ -22,7 +25,7 @@ EMAIL_CC = ['cc@example.com',]
 EMAIL_BCC = ['bcc@example.com',]
 ```
 
-## Using S/MIME
+## Using S/MIME (deprecated)
 
 To send signed/encrypted emails with S/MIME to users, install and configure [django-djembe](https://github.com/cabincode/django-djembe) and add it in your *installed_apps.txt*.
 

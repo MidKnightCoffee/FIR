@@ -1,1 +1,1 @@
-abuse_finder
+abuse_finder>=0.3

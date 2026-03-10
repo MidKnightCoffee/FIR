@@ -15,19 +15,17 @@ def rich_edit_static(context):
 
     files = [
         "<link href=\"%s\" rel=\"stylesheet\"/>" % static(
-            "simplemde/simplemde.min.css"),
+            "easymde/easymde.min.css"),
         "<link href=\"%s\" rel=\"stylesheet\"/>" % static(
             "font-awesome/css/font-awesome.min.css"),
         "<script type=\"text/javascript\" src=\"%s\"></script>" % static(
-            "simplemde/marked.min.js"),
+            "easymde/marked.min.js"),
         "<script type=\"text/javascript\" src=\"%s\"></script>" % static(
-            "simplemde/simplemde.min.js"),
+            "easymde/easymde.min.js"),
         "<script type=\"text/javascript\" src=\"%s\"></script>" % static(
-            "simplemde/inline-attachment.min.js"),
+            "easymde/codemirror.js"),
         "<script type=\"text/javascript\" src=\"%s\"></script>" % static(
-            "simplemde/codemirror.inline-attachment.js"),
-        "<script type=\"text/javascript\" src=\"%s\"></script>" % static(
-            "simplemde/markdown.js")
+            "easymde/markdown.js")
     ]
     return mark_safe("\n".join(files))
 
@@ -43,5 +41,7 @@ def render_markdown(data):
                               link_patterns=registry.link_patterns(),
                               safe_mode=settings.MARKDOWN_SAFE_MODE)
     if settings.MARKDOWN_SAFE_MODE:
-        html = bleach.clean(html, tags=settings.MARKDOWN_ALLOWED_TAGS)
+        html = bleach.clean(text=html, tags=settings.MARKDOWN_ALLOWED_TAGS,
+                            attributes=settings.MARKDOWN_ALLOWED_ATTRIBUTES,
+                            protocols=settings.MARKDOWN_ALLOWED_PROTOCOLS)
     return mark_safe(html)

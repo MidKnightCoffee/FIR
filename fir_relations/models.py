@@ -1,18 +1,15 @@
-from __future__ import unicode_literals
 
 from django.db import models
 from django.db.models.signals import post_save
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.dispatch import receiver
-from django.utils.translation import ugettext_lazy as _
-from django.utils.encoding import python_2_unicode_compatible
+from django.utils.translation import gettext_lazy as _
 
 from fir_plugins.links import registry
 from incidents.models import Incident, Comments
 
 
-@python_2_unicode_compatible
 class TemplateRelation(object):
     def __init__(self, relation, request, relation_type='target'):
         self.relation = relation
@@ -68,7 +65,7 @@ class TemplateRelation(object):
         return self.object._meta.verbose_name
 
     def __str__(self):
-        return unicode(self.object)
+        return str(self.object)
 
 
 class RelationQuerySet(models.QuerySet):

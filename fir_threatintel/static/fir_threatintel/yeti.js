@@ -1,125 +1,139 @@
-var observables_template = Handlebars.compile($("#yeti-observables-template").html());
-var matches_template = Handlebars.compile($("#yeti-matches-template").html());
-var tab_data_template = Handlebars.compile($("#yeti-tab-data-template").html());
+// Compile Handlebars templates
+const observables_template = Handlebars.compile(
+  document.querySelector("#yeti-observables-template").innerHTML,
+);
+const tab_data_template = Handlebars.compile(
+  document.querySelector("#yeti-tab-data-template").innerHTML,
+);
 
-var headers = {
-  "Accept": "application/json",
-}
-if (YETI_HTTP_AUTH_USERNAME != "") {
-  headers["Authorization"] = "Basic " + btoa(YETI_HTTP_AUTH_USERNAME + ":" + YETI_HTTP_AUTH_PASSWORD);
-}
-
-YETI_API_KEY = $("#yeti_api_key").val();
-YETI_ENDPOINT = $("#yeti_endpoint").val(); + ""
-YETI_OBSERVABLE_ENDPOINT = YETI_ENDPOINT + "/observable/bulk";
-YETI_MATCH_ENDPOINT = YETI_ENDPOINT + "/analysis/match";
-
-if (YETI_API_KEY != "") {
-  headers["X-Api-Key"] = YETI_API_KEY;
-}
-
-$(function () {
-  query_yeti();
+document.addEventListener("DOMContentLoaded", () => {
+  yeti_query_artifacts();
 });
 
-function query_yeti() {
-  if (YETI_ENDPOINT == "") {
-    return;
+function yeti_query_artifacts() {
+  let artifacts = document.querySelectorAll("#artifacts .artifacts-table a");
+  const searchparams = new URLSearchParams();
+
+  for (let art of artifacts) {
+    searchparams.append("observable", art.textContent);
   }
 
-  artifacts = [];
-  inputs = $("input[name='artifacts']").serializeArray();
-  for (var i in inputs) {
-    artifacts.push(inputs[i]['value']);
-  }
-  yeti_query_artifacts(artifacts);
-}
-
-function yeti_query_artifacts(observables) {
-  // extra options are set in ajaxSetup
-  $.ajax({
-    url: YETI_MATCH_ENDPOINT,
-    type: 'POST',
-    headers: headers,
-    contentType: "application/json",
-    data: JSON.stringify({"observables": observables}),
-    success: function(data) {
-      $("#tab_threatintel").empty();
+  fetch(`/api/yeti?${searchparams}`, {
+    headers: {
+      "Content-Type": "application/json",
+    },
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.hasOwnProperty("detail")) {
+        throw new Error(data.detail);
+      }
+      document.querySelector("#tab_threatintel").innerHTML = "";
       render_results(data);
-    }
-  });
+    })
+    .catch((err) => console.error("Error querying observables:", err));
 }
 
 function render_results(data) {
-
-  Handlebars.registerHelper("join", function(array, sep, key) {
-    ar = {}
-    for (var i in array) {
-      ar[array[i][key]] = 1;
+  // Helper for joining arrays (e.g. multiple sources)
+  Handlebars.registerHelper("join", function (array, sep) {
+    if (!Array.isArray(array)) {
+      return "";
     }
-    return Object.keys(ar).join(sep);
+    return array.join(sep);
   });
 
+  // Render the HTML from templates
+  document.querySelector("#tab_threatintel").innerHTML =
+    observables_template(data);
+  document.querySelector("#ti-tab .ti-count").innerHTML =
+    tab_data_template(data);
 
-
-  $("#tab_threatintel").html(matches_template(data)).append(observables_template(data));
-  $("#ti-tab .ti-count").html(tab_data_template(data))
-
-  $('.tagsinput').tagsInput();
+  // Initialize tags input (scoped to tab_threatintel)
+  attachTagInputHandlers(document.querySelector("#tab_threatintel"));
 
   // Send button
-  $("#send-to-yeti").click(function(event) {
-    event.preventDefault();
-    var all_tags = $(".all-tags").val().split(',');
-    var observables = []
+  const sendBtn = document.querySelector(".send-to-yeti");
+  if (sendBtn) {
+    sendBtn.addEventListener("click", function (event) {
+      event.preventDefault();
 
-    $(".yeti-send tr.observable").each(function() {
-      if ($(this).find("input[type=checkbox]:checked").length !== 0) {
-        var observable = {
-          "value": $(this).find('.value').text(),
-          "tags":  all_tags.concat($(this).find('input.tagsinput').val().split(','))
-        }
-        observables.push(observable)
+      const observables = [];
+      document
+        .querySelectorAll("#tab_threatintel .yeti-form tr.observable")
+        .forEach((row) => {
+          const checkbox = row.querySelector("input[type=checkbox]:checked");
+          if (checkbox) {
+            const observable = {
+              value: row.querySelector(".value").textContent.trim(),
+              tags: row
+                .querySelector(".tags-hidden")
+                .value.split(",")
+                .filter(Boolean),
+            };
+            observables.push(observable);
+          }
+        });
+
+      if (observables.length > 0) {
+        yeti_post_observables(observables);
       }
     });
+  }
 
-    yeti_post_observables(observables, $(this));
-
-  });
-
-  // toggle buttons
-  $("#toggle-send").click(function(event) {
-    event.preventDefault();
-    $("div.send").toggle();
-    $("div.read").toggle();
-    $(this).text($(this).text() == "Cancel" ? "Send to Yeti..." : "Cancel");
+  // Toggle button (switch read <-> send mode)
+  document.querySelectorAll(".toggle-send-to-yeti").forEach((toggleBtn) => {
+    toggleBtn.addEventListener("click", function (event) {
+      event.preventDefault();
+      document
+        .querySelector("#tab_threatintel div.yeti-form")
+        .classList.toggle("d-none");
+      document
+        .querySelector("#tab_threatintel div.yeti-read")
+        .classList.toggle("d-none");
+    });
   });
 
   // "Select all" checkbox
-  $("input.check-all").click(function(event) {
-    state = this.checked;
-    targetClass = $(this).data('target');
-    $("."+targetClass+" input[type=checkbox]").prop("checked", state);
-  });
+  document
+    .querySelectorAll("#tab_threatintel input.check-all")
+    .forEach((checkAll) => {
+      checkAll.addEventListener("click", function () {
+        const state = this.checked;
+        const targetClass = this.dataset.target;
+        document
+          .querySelectorAll(
+            `#tab_threatintel .${targetClass} input[type=checkbox]`,
+          )
+          .forEach((cb) => {
+            cb.checked = state;
+          });
+      });
+    });
 }
 
-function yeti_post_observables(observables, row) {
+function yeti_post_observables(observables) {
+  const csrftoken = document.querySelector("[name=csrfmiddlewaretoken]").value;
+  const fid = document.querySelector("#yeti-fid").textContent;
 
-  fid = $("#fid").data("fid");
-  for (var i in observables) {
-    observables[i]['context'] = {"FID": fid, "source" : "FIR", "Description": "Seen in FIR ID:"+fid};
-    observables[i]['source'] = "FIR"
-  }
-
-  // extra options are set in ajaxSetup
-  $.ajax({
-    url: YETI_OBSERVABLE_ENDPOINT,
-    type: 'POST',
-    headers: headers,
-    contentType: "application/json",
-    data: JSON.stringify({"observables": observables, "refang": false}),
-    success: function(data) {
-      query_yeti();
-    }
+  observables.forEach((obs) => {
+    obs.fid = fid;
   });
+
+  fetch("/api/yeti", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRFToken": csrftoken,
+    },
+    body: JSON.stringify({ observables: observables }),
+  })
+    .then((response) => response.json())
+    .then((data) => {
+      if (data.hasOwnProperty("detail")) {
+        throw new Error(data.detail);
+      }
+      yeti_query_artifacts();
+    })
+    .catch((err) => console.error("Error posting observables:", err));
 }

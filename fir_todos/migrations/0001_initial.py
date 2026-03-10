@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-from __future__ import unicode_literals
 
 from django.db import models, migrations
 
@@ -19,9 +18,9 @@ class Migration(migrations.Migration):
                 ('done', models.BooleanField(default=False)),
                 ('done_time', models.DateTimeField(null=True, blank=True)),
                 ('deadline', models.DateField(null=True, blank=True)),
-                ('business_line', models.ForeignKey(to='incidents.BusinessLine')),
-                ('category', models.ForeignKey(to='incidents.IncidentCategory')),
-                ('incident', models.ForeignKey(to='incidents.Incident')),
+                ('business_line', models.ForeignKey(to='incidents.BusinessLine', on_delete=models.deletion.CASCADE)),
+                ('category', models.ForeignKey(to='incidents.IncidentCategory', on_delete=models.deletion.CASCADE)),
+                ('incident', models.ForeignKey(to='incidents.Incident', on_delete=models.deletion.CASCADE)),
             ],
             options={
             },
